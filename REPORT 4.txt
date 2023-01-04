@@ -1,0 +1,155 @@
+*&---------------------------------------------------------------------*
+*& Report  ZALV_TEST1
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT ZALV_TEST2.
+TABLES:MARA.
+
+SELECT-OPTIONS:S_MTART FOR MARA-MTART,
+               S_MATKL FOR MARA-MATKL.
+
+TYPES:BEGIN OF ty_mara,
+      matnr TYPE matnr,
+      MTART TYPE MTART,
+      MATKL TYPE MATKL,
+      END OF ty_mara.
+
+types:BEGIN OF ty_makt,
+      matnr TYPE matnr,
+      maktx TYPE makt-maktx,
+      END OF ty_makt.
+
+TYPES: BEGIN OF ty_final,
+      matnr TYPE matnr,
+      MTART TYPE MTART,
+      MATKL TYPE MATKL,
+      maktx TYPE makt-maktx,
+      END OF ty_final.
+DATA:IT_MARA TYPE STANDARD TABLE OF ty_MARA,
+     WA_MARA TYPE ty_MARA,
+     it_makt TYPE STANDARD TABLE OF ty_makt,
+     wa_makt TYPE ty_makt,
+     it_final TYPE STANDARD TABLE OF ty_final,
+     wa_final TYPE ty_final.
+
+data:wa_fact TYPE slis_fieldcat_alv,
+     it_fact TYPE SLIS_T_FIELDCAT_ALV.
+START-OF-SELECTION.
+
+SELECT matnr
+       MTART
+       MATKL
+       FROM MARA
+       INTO TABLE IT_MARA
+       WHERE MTART IN S_MTART
+         AND MATKL IN S_MATKL.
+if IT_MARA is NOT INITIAL.
+ SELECT matnr
+        maktx
+        FROM makt
+        INTO TABLE it_makt
+        FOR ALL ENTRIES IN it_mara
+        WHERE matnr = it_mara-matnr.
+
+loop at it_mara INTO wa_mara.
+
+READ TABLE it_makt INTO wa_makt with key matnr = wa_mara-matnr.
+if sy-subrc = 0.
+  wa_final-matnr = wa_mara-matnr.
+  wa_final-MTART = wa_mara-MTART.
+  wa_final-MATKL = wa_mara-MATKL.
+  wa_final-maktx = wa_makt-maktx.
+  append wa_final to it_final.
+
+endif.
+
+ENDLOOP.
+
+
+
+endif.
+
+wa_fact-col_pos = 1.
+wa_fact-fieldname = 'MATNR'.
+wa_fact-outputlen = 18.
+wa_fact-seltext_l = 'Material Code'.
+APPEND wa_fact to it_fact.
+clear:wa_fact.
+
+wa_fact-col_pos = 2.
+wa_fact-fieldname = 'MTART'.
+wa_fact-outputlen = 10.
+wa_fact-seltext_l = 'Material Type'.
+APPEND wa_fact to it_fact.
+clear:wa_fact.
+
+
+wa_fact-col_pos = 3.
+wa_fact-fieldname = 'MATKL'.
+wa_fact-outputlen = 18.
+wa_fact-seltext_l = 'Material Group'.
+APPEND wa_fact to it_fact.
+clear:wa_fact.
+
+wa_fact-col_pos = 4.
+wa_fact-fieldname = 'MAKTX'.
+wa_fact-outputlen = 40.
+wa_fact-seltext_l = 'Material Description'.
+APPEND wa_fact to it_fact.
+clear:wa_fact.
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+   EXPORTING
+*     I_INTERFACE_CHECK                 = ' '
+*     I_BYPASSING_BUFFER                = ' '
+*     I_BUFFER_ACTIVE                   = ' '
+     I_CALLBACK_PROGRAM                = 'ZALV_TEST2'
+*     I_CALLBACK_PF_STATUS_SET          = ' '
+*     I_CALLBACK_USER_COMMAND           = ' '
+*     I_CALLBACK_TOP_OF_PAGE            = ' '
+*     I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*     I_CALLBACK_HTML_END_OF_LIST       = ' '
+*      I_STRUCTURE_NAME                  = 'MARA'
+*     I_BACKGROUND_ID                   = ' '
+     I_GRID_TITLE                      = 'Material Information'
+*     I_GRID_SETTINGS                   =
+*     IS_LAYOUT                         =
+     IT_FIELDCAT                       = it_fact
+*     IT_EXCLUDING                      =
+*     IT_SPECIAL_GROUPS                 =
+*     IT_SORT                           =
+*     IT_FILTER                         =
+*     IS_SEL_HIDE                       =
+*     I_DEFAULT                         = 'X'
+*     I_SAVE                            = ' '
+*     IS_VARIANT                        =
+*     IT_EVENTS                         =
+*     IT_EVENT_EXIT                     =
+*     IS_PRINT                          =
+*     IS_REPREP_ID                      =
+*     I_SCREEN_START_COLUMN             = 0
+*     I_SCREEN_START_LINE               = 0
+*     I_SCREEN_END_COLUMN               = 0
+*     I_SCREEN_END_LINE                 = 0
+*     I_HTML_HEIGHT_TOP                 = 0
+*     I_HTML_HEIGHT_END                 = 0
+*     IT_ALV_GRAPHICS                   =
+*     IT_HYPERLINK                      =
+*     IT_ADD_FIELDCAT                   =
+*     IT_EXCEPT_QINFO                   =
+*     IR_SALV_FULLSCREEN_ADAPTER        =
+*   IMPORTING
+*     E_EXIT_CAUSED_BY_CALLER           =
+*     ES_EXIT_CAUSED_BY_USER            =
+    TABLES
+      T_OUTTAB                          = IT_final
+   EXCEPTIONS
+     PROGRAM_ERROR                     = 1
+     OTHERS                            = 2
+            .
+  IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+  ENDIF.

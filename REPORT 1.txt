@@ -1,0 +1,62 @@
+*---------------------------------------------------------------------*
+*& Report  ZZARYAN_FORMATE_TABLE
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT ZZARYAN_FORMATE_TABLE.
+
+TABLES: vbak ,vbap.
+
+select-OPTIONS :
+    s_vbeln for vbak-vbeln,
+    s_matnr for vbap-matnr,
+    s_erdat for vbak-erdat,
+    s_ernam for vbak-ernam.
+
+PARAMETERS: p_quote as CHECKBOX.
+
+types : begin of ty_order,
+    vbeln type vbeln_va,
+    matnr type matnr,
+    erdat type erdat,
+    ernam type ernam,
+    posnr type posnr,
+    netwr type netwr,
+    kwmeng type kwmeng,
+  END OF ty_order.
+
+data : it_order type table of ty_order,
+      wa_order type ty_order.
+
+if p_quote = 'x'.
+  select vbak~vbeln vbak~ernam vbak~erdat vbap~matnr vbap~posnr vbap~kwmeng vbap~netwr
+       from vbak as vbak INNER JOIN vbap as vbap on vbak~vbeln = vbap~vbeln
+  into TABLE it_order
+  WHERE vbak~vbeln in s_vbeln and
+        vbak~erdat in s_erdat and
+        vbak~ernam in s_ernam and
+        vbap~matnr in s_matnr and
+        vbak~vbtyp = 'B'.
+
+else.
+select vbak~vbeln vbak~ernam vbak~erdat vbap~matnr vbap~posnr vbap~kwmeng vbap~netwr
+       from vbak as vbak INNER JOIN vbap as vbap on vbak~vbeln = vbap~vbeln
+  into TABLE it_order
+  WHERE vbak~vbeln in s_vbeln and
+        vbak~erdat in s_erdat and
+        vbak~ernam in s_ernam and
+        vbap~matnr in s_matnr.
+
+ENDIF.
+
+format COLOR 2.
+  write : / 'order num ', 'created by ' , ' created on' , ' item             ' , ' material      ' ,' quantity ' , '        value ' .
+FORMAT COLOR OFF.
+
+format COLOR 3.
+loop at it_order into wa_order.
+ write : / wa_order-vbeln , wa_order-ernam ,wa_order-erdat ,wa_order-matnr , wa_order-posnr ,wa_order-kwmeng , wa_order-netwr .
+ endloop .
+ format color off.
